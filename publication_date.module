@@ -64,55 +64,6 @@ function publication_date_form_node_form_alter(&$form, \Drupal\Core\Form\FormSta
     $form['published_at']['#access'] = $account->hasPermission('set any published on date') || $account->hasPermission('set ' . $node->bundle() . ' published on date');
     $form['published_at']['#group'] = 'revision_information';
   }
-
-  /*
-  // Use the popup date picker provided by the Date module, if it is enabled and
-  // the user has access to edit the publication date.
-  if ($pubdate_access && \Drupal::moduleHandler()->moduleExists('date_popup') && \Drupal::config('publication_date')->get('popup_enable')) {
-    // The date popup field requires a date format without the timezone.
-    $date_format = 'Y-m-d H:i:s';
-    $form['options']['pubdate'] = array(
-      '#type' => 'date_popup',
-      '#title' => t('Published on'),
-      '#description' => t('Leave blank to use the time of form submission.'),
-      '#date_type' => DATE_UNIX,
-      '#date_timezone' => date_default_timezone(),
-      '#date_format' => $date_format,
-      '#date_increment' => 1,
-      '#date_year_range' => '-' . \Drupal::config('publication_date')->get('year_start') . ':+' . \Drupal::config('publication_date')->get('date_popup_year_end'),
-      '#weight' => -1,
-      '#access' => TRUE,
-    );
-  }
-  // Falback to a standard text field.
-  else {
-    $form['options']['pubdate'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Published on'),
-      '#maxlength' => 25,
-      '#description' => t('Format: %time. Leave blank to use the time of form submission.', array('%time' => format_date(REQUEST_TIME, 'custom', $date_format))),
-      '#weight' => -1,
-      '#access' => $pubdate_access,
-    );
-  }
-
-  // If there is an existing publication date, set it as the default value.
-  $form['options']['pubdate']['#default_value'] = empty($published_at) ? '' : format_date($published_at, 'custom', $date_format);
-
-  // If the user can access pubdate, we need to make sure they also have access
-  // to the options group.
-  if ($pubdate_access && $form['options']['#access'] == FALSE) {
-    $form['options']['#access'] = TRUE;
-    // Check all fields in the options group and, if access has not been set,
-    // set it to FALSE. We don't want to grant access to any extra fields.
-    $children = \Drupal\Core\Render\Element::children($form['options']);
-    foreach ($children as $key => $value) {
-      if (!isset($form['options'][$value]['#access'])){
-        $form['options'][$value]['#access'] = FALSE;
-      }
-    }
-  }
-  */
 }
 
 /**
