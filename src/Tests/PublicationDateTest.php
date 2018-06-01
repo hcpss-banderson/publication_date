@@ -51,9 +51,9 @@ class PublicationDateTest extends WebTestBase {
     // Create node to edit.
     $node = $this->drupalCreateNode(array('status' => 0));
     $unpublished_node = node_load($node->id());
-    $this->assertTrue(empty($unpublished_node->published_at->value), 'Published date is initially empty');
-    $this->assertTrue($unpublished_node->published_at->published_at_or_now == REQUEST_TIME,
-      'Published at or now date is REQUEST_TIME');
+    $value = $unpublished_node->published_at->value;
+    $this->assertEqual($unpublished_node->published_at->value, PUBLICATION_DATE_DEFAULT);
+    $this->assertEqual($unpublished_node->published_at->published_at_or_now, REQUEST_TIME, 'Published at or now date is REQUEST_TIME');
 
     // Publish the node.
     $unpublished_node->status = 1;
@@ -80,8 +80,7 @@ class PublicationDateTest extends WebTestBase {
     $unpublished_node->published_at->value = 0;
     $unpublished_node->save();
     $unpublished_node = node_load($node->id());
-    $this->assertTrue(empty($unpublished_node->published_at->value),
-      'Published date is empty when reset');
+    $this->assertEqual($unpublished_node->published_at->value, PUBLICATION_DATE_DEFAULT);
 
     // Set a custom time and make sure that it is saved.
     $time = $unpublished_node->published_at->value = 122630400;
@@ -114,68 +113,67 @@ class PublicationDateTest extends WebTestBase {
    * Test automatic saving of variables via forms
    */
   public function testActionSavingOnForms() {
-    $langcode = LANGUAGE_NONE;
-
     $edit = array();
-    $edit["title"] = 'publication test node ' . $this->randomName(10);
-    $edit["body[$langcode][0][value]"] = 'publication node test body ' . $this->randomName(32) . ' ' . $this->randomName(32);
-    $edit['status'] = 1;
+    $edit["title[0][value]"] = 'publication test node ' . $this->randomMachineName(10);
+    $edit['status[value]'] = 1;
 
     // Hard to test created time == REQUEST_TIME because simpletest launches a
     // new HTTP session, so just check it's set.
-    $this->drupalPost('node/add/page', $edit, t('Save'));
-    $node = $this->drupalGetNodeByTitle($edit['title']);
+    $this->drupalPostForm('node/add/page', $edit, (string) t('Save'));
+    $node = $this->drupalGetNodeByTitle($edit["title[0][value]"]);
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $value = $this->_getPubdateFieldValue();
+    $value = $this->getPubdateFieldValue();
+    list($date, $time) = explode(' ', $value);
 
     // Make sure it was created with Published At set.
     $this->assertNotNull($value, t('Publication date set initially'));
 
     // Unpublish the node and check that the field value is maintained.
-    $edit['status'] = 0;
-    $this->drupalPost('node/' . $node->id() . '/edit', $edit, t('Save'));
+    $edit['status[value]'] = 0;
+    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, (string) t('Save'));
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $this->assertFieldByName('pubdate', $value,
-      t('Pubdate is maintained when unpublished'));
+    $this->assertFieldByName('published_at[0][value][date]', $date, t('Pubdate is maintained when unpublished'));
+    $this->assertFieldByName('published_at[0][value][time]', $time, t('Pubdate is maintained when unpublished'));
 
     // Republish the node and check that the field value is maintained.
-    $edit['status'] = 1;
-    $this->drupalPost('node/' . $node->id() . '/edit', $edit, t('Save'));
+    $edit['status[value]'] = 1;
+    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, (string) t('Save'));
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $this->assertFieldByName('pubdate', $value,
-      t('Pubdate is maintained when republished'));
+    $this->assertFieldByName('published_at[0][value][date]', $date, t('Pubdate is maintained when republished'));
+    $this->assertFieldByName('published_at[0][value][time]', $time, t('Pubdate is maintained when republished'));
 
     // Set a custom time and make sure that it is stored correctly.
     $ctime = REQUEST_TIME - 180;
-    $edit['pubdate'] = format_date($ctime, 'custom', 'Y-m-d H:i:s O');
-    $this->drupalPost('node/' . $node->id() . '/edit', $edit, t('Save'));
+    $edit['published_at[0][value][date]'] = format_date($ctime, 'custom', 'Y-m-d');
+    $edit['published_at[0][value][time]'] = format_date($ctime, 'custom', 'H:i:s');
+    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, (string) t('Save'));
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $custom_value = $this->_getPubdateFieldValue();
-    $this->assertTrue($custom_value == format_date($ctime, 'custom',
-        'Y-m-d H:i:s O'), t('Custom time/date was set'));
+    $value = $this->getPubdateFieldValue();
+    list($date, $time) = explode(' ', $value);
+    $this->assertEqual($date, format_date($ctime, 'custom', 'Y-m-d'), t('Custom date was set'));
+    $this->assertEqual($time, format_date($ctime, 'custom', 'H:i:s'), t('Custom time was set'));
 
     // Set the field to empty and and make sure the published date is reset.
-    $edit['pubdate'] = '';
+    $edit['published_at[0][value][date]'] = '';
+    $edit['published_at[0][value][time]'] = '';
     sleep(2);
-    $this->drupalPost('node/' . $node->id() . '/edit', $edit, t('Save'));
+    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, (string) t('Save'));
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $new_value = $this->_getPubdateFieldValue();
-    $this->assertNotNull($new_value,
-      t('Published time was set automatically when there was no value entered'));
-    $this->assertNotNull($new_value != $custom_value,
-      t('The new published-at time is different from the custom time'));
-    $this->assertTrue($new_value > $value,
-      t('The new published-at time is greater than the original one'));
+    $new_value = $this->getPubdateFieldValue();
+    list($new_date, $new_time) = explode(' ', $this->getPubdateFieldValue());
+    $this->assertNotNull($new_value, t('Published time was set automatically when there was no value entered'));
+    $this->assertNotEqual($new_time, $time, t('The new published-at time is different from the custom time'));
+    $this->assertTrue(strtotime($this->getPubdateFieldValue()) > strtotime($value), t('The new published-at time is greater than the original one'));
 
     // Unpublish the node.
-    $edit['status'] = 0;
-    $this->drupalPost('node/' . $node->id() . '/edit', $edit, t('Save'));
+    $edit['status[value]'] = 0;
+    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, (string) t('Save'));
 
     // Set the field to empty and and make sure that it stays empty.
-    $edit['pubdate'] = '';
-    $this->drupalPost('node/' . $node->id() . '/edit', $edit, t('Save'));
+    $edit['published_at[0][value][date]'] = '';
+    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, (string) t('Save'));
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $this->assertFieldByName('pubdate', '',
+    $this->assertFieldByName('published_at[0][value][date]', '',
       t('Publication date field is empty'));
   }
 
@@ -204,13 +202,15 @@ class PublicationDateTest extends WebTestBase {
    * Returns the value of our published-at field
    * @return string
    */
-  private function _getPubdateFieldValue() {
+  private function getPubdateFieldValue() {
     $value = '';
 
-    if ($this->assertField('pubdate', t('Published At field exists'))) {
-      $field = $this->xpath('//input[@id="edit-pubdate"]');
-      $value = (string) $field[0]['value'];
-      return $value;
+    if ($this->assertField('published_at[0][value][date]', t('Published At field exists'))) {
+      $field = $this->xpath('//input[@name="published_at[0][value][date]"]');
+      $date = (string) $field[0]['value'];
+      $field = $this->xpath('//input[@name="published_at[0][value][time]"]');
+      $time = (string) $field[0]['value'];
+      return trim($date . ' ' . $time);
     }
 
     return $value;

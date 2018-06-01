@@ -2,13 +2,9 @@
 
 namespace Drupal\publication_date\EventSubscriber;
 
-use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\workbench_moderation\Event\WorkbenchModerationEvents;
 use Drupal\workbench_moderation\Event\WorkbenchModerationTransitionEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Publication Date event subscriber.

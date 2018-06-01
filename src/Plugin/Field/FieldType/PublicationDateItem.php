@@ -50,7 +50,9 @@ class PublicationDateItem extends ChangedItem {
 
     $properties['published_at_or_now'] = DataDefinition::create('timestamp')
       ->setLabel(t('Published at or now'))
-      ->setComputed(TRUE);
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\publication_date\PublishedAtOrNowComputed')
+      ->setSetting('source', 'value');
 
     return $properties;
   }
