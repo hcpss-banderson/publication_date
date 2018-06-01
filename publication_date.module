@@ -34,9 +34,7 @@ function publication_date_entity_base_field_info(\Drupal\Core\Entity\EntityTypeI
       ->setRevisionable(TRUE)
       ->setTranslatable(TRUE)
       ->setDisplayOptions('view', array(
-        'label' => 'hidden',
-        'type' => 'timestamp',
-        'weight' => 0,
+        'type' => 'hidden',
       ))
       ->setDisplayConfigurable('view', TRUE)
       ->setDisplayOptions('form', array(
