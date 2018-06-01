@@ -182,8 +182,7 @@ class PublicationDateTest extends WebTestBase {
   public function testActionSavingSetDate() {
     $node = $this->drupalCreateNode(array('status' => 0));
     $unpublished_node = node_load($node->id());
-    $this->assertTrue(empty($unpublished_node->published_at->value),
-      'Published date is initially empty');
+    $this->assertEqual($unpublished_node->published_at->value, PUBLICATION_DATE_DEFAULT);
 
     // Now publish this with our custom time...
     $unpublished_node->status = 1;
