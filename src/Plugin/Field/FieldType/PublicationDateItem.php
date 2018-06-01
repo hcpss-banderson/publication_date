@@ -7,6 +7,7 @@
 
 namespace Drupal\publication_date\Plugin\Field\FieldType;
 
+use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\ChangedItem;
@@ -36,9 +37,7 @@ class PublicationDateItem extends ChangedItem {
    * {@inheritdoc}
    */
   public function applyDefaultValue($notify = TRUE) {
-    $value = $this->isPublished() ? REQUEST_TIME : NULL;
-    $published_at_or_now = isset($value) ? $value : REQUEST_TIME;
-    $this->setValue(['value' => $value, 'published_at_or_now' => $published_at_or_now], $notify);
+    $this->setValue(['value' => NULL, 'published_at_or_now' => REQUEST_TIME], $notify);
     return $this;
   }
 
@@ -80,11 +79,7 @@ class PublicationDateItem extends ChangedItem {
 
   protected function isPublished() {
     $entity = $this->getEntity();
-    if (!($entity instanceof FieldableEntityInterface && $entity->hasField('status'))) {
-      return FALSE;
-    }
-
-    return $entity->get('status')->value;
+    return ($entity instanceof EntityPublishedInterface) ? $entity->isPublished() : FALSE;
   }
 
   /**
