@@ -51,12 +51,6 @@ the node is unpublished and republished. In version 1.0 the date was lost when
 the node was unpublished.
 
 
-API
---------------------------------------------------------------------------
-Other modules can use hook_publication_date_alter() to change the publication
-date when it is set. See publication_date.api.php for more documentation.
-
-
 CREDITS
 --------------------------------------------------------------------------
 The Publication Date module was originally written by Emmanuelle Gouleau and
