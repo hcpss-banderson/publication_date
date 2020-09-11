@@ -13,7 +13,7 @@ class PublishedAtOrNowComputed extends TypedData {
     if ($value && $value != PUBLICATION_DATE_DEFAULT) {
       return $value;
     }
-    return REQUEST_TIME;
+    return \Drupal::time()->getRequestTime();
   }
 
 }

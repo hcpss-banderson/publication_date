@@ -3,3 +3,4 @@ description: "Add a field containing the publication date."
 type: module
 core: 8.x
 configure: admin/config/content/publication-date
+core_version_requirement: ^8 || ^9

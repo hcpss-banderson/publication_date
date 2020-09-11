@@ -37,7 +37,7 @@ class PublicationDateItem extends ChangedItem {
    * {@inheritdoc}
    */
   public function applyDefaultValue($notify = TRUE) {
-    $this->setValue(['value' => NULL, 'published_at_or_now' => REQUEST_TIME], $notify);
+    $this->setValue(['value' => NULL, 'published_at_or_now' => \Drupal::time()->getRequestTime()], $notify);
     return $this;
   }
 
@@ -68,12 +68,12 @@ class PublicationDateItem extends ChangedItem {
     // If the default publication date is set and the entity is published then
     // store the current date.
     elseif ($this->isPublished() && $this->value == PUBLICATION_DATE_DEFAULT) {
-      $this->value = REQUEST_TIME;
+      $this->value = \Drupal::time()->getRequestTime();
     }
 
     // Set the timestamp to request time if it is not set.
     if (!$this->value) {
-      $this->value = REQUEST_TIME;
+      $this->value = \Drupal::time()->getRequestTime();
     }
   }
 

@@ -8,14 +8,15 @@
 namespace Drupal\publication_date\Tests;
 
 use Drupal\node\Entity\NodeType;
-use Drupal\simpletest\WebTestBase;
+use Drupal\Tests\BrowserTestBase;
+use Drupal\node\Entity\Node;
 
 /**
  * Tests for publication_date.
  *
  * @group publication_date
  */
-class PublicationDateTest extends WebTestBase {
+class PublicationDateTest extends BrowserTestBase {
 
   /**
    * Modules to enable.
@@ -24,7 +25,17 @@ class PublicationDateTest extends WebTestBase {
    */
   public static $modules = array('node', 'user', 'publication_date');
 
+  /**
+   * {@inheritdoc}
+   */
   protected $privileged_user;
+
+  /**
+   * The date formatter.
+   *
+   * @var \Drupal\Core\Datetime\DateFormatterInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $dateFormatter;
 
   public function setUp() {
     parent::setUp();
@@ -41,6 +52,8 @@ class PublicationDateTest extends WebTestBase {
       'set page published on date',
     ));
     $this->drupalLogin($this->privileged_user);
+
+    $this->dateFormatter = $this->createMock('\Drupal\Core\Datetime\DateFormatterInterface');
   }
 
   /**
@@ -50,7 +63,7 @@ class PublicationDateTest extends WebTestBase {
 
     // Create node to edit.
     $node = $this->drupalCreateNode(array('status' => 0));
-    $unpublished_node = node_load($node->id());
+    $unpublished_node = Node::load($node->id());
     $value = $unpublished_node->published_at->value;
     $this->assertEqual($unpublished_node->published_at->value, PUBLICATION_DATE_DEFAULT);
     $this->assertEqual($unpublished_node->published_at->published_at_or_now, REQUEST_TIME, 'Published at or now date is REQUEST_TIME');
@@ -58,7 +71,7 @@ class PublicationDateTest extends WebTestBase {
     // Publish the node.
     $unpublished_node->status = 1;
     $unpublished_node->save();
-    $published_node = node_load($node->id());
+    $published_node = Node::load($node->id());
     $this->assertTrue(is_numeric($published_node->published_at->value),
       'Published date is integer/numberic once published');
     $this->assertTrue($published_node->published_at->value == REQUEST_TIME,
@@ -72,20 +85,20 @@ class PublicationDateTest extends WebTestBase {
     // Unpublish the node and check that the field value is maintained.
     $published_node->status = 0;
     $published_node->save();
-    $unpublished_node = node_load($node->id());
+    $unpublished_node = Node::load($node->id());
     $this->assertTrue($unpublished_node->published_at->value == $time,
       'Published date is maintained when unpublished');
 
     // Set the field to zero and and make sure the published date is empty.
     $unpublished_node->published_at->value = 0;
     $unpublished_node->save();
-    $unpublished_node = node_load($node->id());
+    $unpublished_node = Node::load($node->id());
     $this->assertEqual($unpublished_node->published_at->value, PUBLICATION_DATE_DEFAULT);
 
     // Set a custom time and make sure that it is saved.
     $time = $unpublished_node->published_at->value = 122630400;
     $unpublished_node->save();
-    $unpublished_node = node_load($node->id());
+    $unpublished_node = Node::load($node->id());
     $this->assertTrue($unpublished_node->published_at->value == $time,
       'Custom published date is saved');
     $this->assertTrue($unpublished_node->published_at->published_at_or_now == $time,
@@ -94,14 +107,14 @@ class PublicationDateTest extends WebTestBase {
     // Republish the node and check that the field value is maintained.
     $unpublished_node->status = 1;
     $unpublished_node->save();
-    $published_node = node_load($node->id());
+    $published_node = Node::load($node->id());
     $this->assertTrue($published_node->published_at->value == $time,
       'Custom published date is maintained when republished');
 
     // Set the field to zero and and make sure the published date is reset.
     $published_node->published_at->value = 0;
     $published_node->save();
-    $published_node = node_load($node->id());
+    $published_node = Node::load($node->id());
     $this->assertTrue($published_node->published_at->value > $time,
       'Published date is reset');
 
@@ -144,14 +157,14 @@ class PublicationDateTest extends WebTestBase {
 
     // Set a custom time and make sure that it is stored correctly.
     $ctime = REQUEST_TIME - 180;
-    $edit['published_at[0][value][date]'] = format_date($ctime, 'custom', 'Y-m-d');
-    $edit['published_at[0][value][time]'] = format_date($ctime, 'custom', 'H:i:s');
+    $edit['published_at[0][value][date]'] = $this->dateFormatter->format($ctime, 'custom', 'Y-m-d');
+    $edit['published_at[0][value][time]'] = $this->dateFormatter->format($ctime, 'custom', 'H:i:s');
     $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, (string) t('Save'));
     $this->drupalGet('node/' . $node->id() . '/edit');
     $value = $this->getPubdateFieldValue();
     list($date, $time) = explode(' ', $value);
-    $this->assertEqual($date, format_date($ctime, 'custom', 'Y-m-d'), t('Custom date was set'));
-    $this->assertEqual($time, format_date($ctime, 'custom', 'H:i:s'), t('Custom time was set'));
+    $this->assertEqual($date, $this->dateFormatter->format($ctime, 'custom', 'Y-m-d'), t('Custom date was set'));
+    $this->assertEqual($time, $this->dateFormatter->format($ctime, 'custom', 'H:i:s'), t('Custom time was set'));
 
     // Set the field to empty and and make sure the published date is reset.
     $edit['published_at[0][value][date]'] = '';
@@ -181,7 +194,7 @@ class PublicationDateTest extends WebTestBase {
   // This is useful for people using 'migrate' etc.
   public function testActionSavingSetDate() {
     $node = $this->drupalCreateNode(array('status' => 0));
-    $unpublished_node = node_load($node->id());
+    $unpublished_node = Node::load($node->id());
     $this->assertEqual($unpublished_node->published_at->value, PUBLICATION_DATE_DEFAULT);
 
     // Now publish this with our custom time...
@@ -189,7 +202,7 @@ class PublicationDateTest extends WebTestBase {
     $static_time = 12345678;
     $unpublished_node->published_at->value = $static_time;
     $unpublished_node->save();
-    $published_node = node_load($node->id());
+    $published_node = Node::load($node->id());
     // ...and see if it comes back with it correctly.
     $this->assertTrue(is_numeric($published_node->published_at->value),
       'Published date is integer/numberic once published');

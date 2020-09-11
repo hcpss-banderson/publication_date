@@ -26,11 +26,11 @@ function _publication_date_update_existing() {
   // @todo: Convert to entity query.
   return;
 
-  $query = db_select('node');
+  $query = \Drupal::database()->select('node');
   $query->addField('node', 'nid');
   $query->addField('node', 'created', 'published_at');
   $nids = $query->condition('status', 1);
-  db_insert('publication_date')
+  \Drupal::database()->insert('publication_date')
     ->from($nids)
     ->execute();
 }
